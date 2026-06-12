@@ -1,0 +1,237 @@
+{
+  "ARG": {
+    "t_i": 5.0,
+    "elite": 9,
+    "total": 26
+  },
+  "AUS": {
+    "t_i": 2.3,
+    "elite": 6,
+    "total": 26
+  },
+  "AUT": {
+    "t_i": 1.2,
+    "elite": 3,
+    "total": 26
+  },
+  "BEL": {
+    "t_i": 5.4,
+    "elite": 14,
+    "total": 26
+  },
+  "BIH": {
+    "t_i": 1.2,
+    "elite": 3,
+    "total": 26
+  },
+  "BRA": {
+    "t_i": 6.1,
+    "elite": 12,
+    "total": 26
+  },
+  "CPV": {
+    "t_i": 1.4,
+    "elite": 1,
+    "total": 26
+  },
+  "CAN": {
+    "t_i": 2.4,
+    "elite": 5,
+    "total": 26
+  },
+  "COL": {
+    "t_i": 2.3,
+    "elite": 6,
+    "total": 26
+  },
+  "COD": {
+    "t_i": 2.4,
+    "elite": 5,
+    "total": 26
+  },
+  "CIV": {
+    "t_i": 2.7,
+    "elite": 7,
+    "total": 26
+  },
+  "CRO": {
+    "t_i": 4.6,
+    "elite": 12,
+    "total": 26
+  },
+  "CUW": {
+    "t_i": 0.0,
+    "elite": 0,
+    "total": 26
+  },
+  "CZE": {
+    "t_i": 0.8,
+    "elite": 2,
+    "total": 26
+  },
+  "ECU": {
+    "t_i": 1.5,
+    "elite": 4,
+    "total": 26
+  },
+  "EGY": {
+    "t_i": 1.5,
+    "elite": 4,
+    "total": 26
+  },
+  "ENG": {
+    "t_i": 10.0,
+    "elite": 23,
+    "total": 26
+  },
+  "FRA": {
+    "t_i": 7.9,
+    "elite": 14,
+    "total": 26
+  },
+  "GER": {
+    "t_i": 2.3,
+    "elite": 6,
+    "total": 26
+  },
+  "GHA": {
+    "t_i": 3.1,
+    "elite": 8,
+    "total": 26
+  },
+  "HAI": {
+    "t_i": 0.8,
+    "elite": 2,
+    "total": 26
+  },
+  "IRN": {
+    "t_i": 0.0,
+    "elite": 0,
+    "total": 26
+  },
+  "IRQ": {
+    "t_i": 0.4,
+    "elite": 1,
+    "total": 26
+  },
+  "JPN": {
+    "t_i": 1.5,
+    "elite": 4,
+    "total": 26
+  },
+  "JOR": {
+    "t_i": 0.0,
+    "elite": 0,
+    "total": 26
+  },
+  "KOR": {
+    "t_i": 0.4,
+    "elite": 1,
+    "total": 26
+  },
+  "MEX": {
+    "t_i": 2.0,
+    "elite": 4,
+    "total": 26
+  },
+  "MAR": {
+    "t_i": 3.2,
+    "elite": 7,
+    "total": 26
+  },
+  "NED": {
+    "t_i": 6.5,
+    "elite": 17,
+    "total": 26
+  },
+  "NZL": {
+    "t_i": 0.8,
+    "elite": 2,
+    "total": 26
+  },
+  "NOR": {
+    "t_i": 5.5,
+    "elite": 13,
+    "total": 26
+  },
+  "PAN": {
+    "t_i": 0.4,
+    "elite": 1,
+    "total": 26
+  },
+  "PAR": {
+    "t_i": 0.9,
+    "elite": 1,
+    "total": 26
+  },
+  "POR": {
+    "t_i": 7.5,
+    "elite": 13,
+    "total": 26
+  },
+  "QAT": {
+    "t_i": 0.5,
+    "elite": 0,
+    "total": 26
+  },
+  "KSA": {
+    "t_i": 0.0,
+    "elite": 0,
+    "total": 26
+  },
+  "SCO": {
+    "t_i": 4.6,
+    "elite": 12,
+    "total": 26
+  },
+  "SEN": {
+    "t_i": 3.1,
+    "elite": 8,
+    "total": 26
+  },
+  "RSA": {
+    "t_i": 0.0,
+    "elite": 0,
+    "total": 26
+  },
+  "ESP": {
+    "t_i": 9.1,
+    "elite": 21,
+    "total": 26
+  },
+  "SWE": {
+    "t_i": 3.5,
+    "elite": 9,
+    "total": 26
+  },
+  "SUI": {
+    "t_i": 3.5,
+    "elite": 9,
+    "total": 26
+  },
+  "TUN": {
+    "t_i": 0.4,
+    "elite": 1,
+    "total": 26
+  },
+  "TUR": {
+    "t_i": 2.3,
+    "elite": 6,
+    "total": 26
+  },
+  "URU": {
+    "t_i": 3.2,
+    "elite": 7,
+    "total": 26
+  },
+  "USA": {
+    "t_i": 3.1,
+    "elite": 8,
+    "total": 26
+  },
+  "UZB": {
+    "t_i": 0.4,
+    "elite": 1,
+    "total": 26
+  }
+}

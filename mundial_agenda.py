@@ -7,6 +7,7 @@
 ╚══════════════════════════════════════════════════════════════════╝
 """
 
+import os
 import json, sys, time
 from datetime import datetime, timedelta
 
@@ -21,9 +22,10 @@ BETA  = 0.10   # peso talla del plantel      t_i
 GAMMA = 0.60   # peso logros recientes       l_i
 DUR   = timedelta(minutes=100)   # 90 min reglamentarios + 10 min adicional promedio
 
-with open('squad_data.json')   as f: SQUAD_DATA     = json.load(f)
-with open('wc_history.json')   as f: WC_HISTORY     = json.load(f)
-with open('recent_titles.json') as f: RECENT_TITLES = json.load(f)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, 'squad_data.json'), encoding='utf-8')   as f: SQUAD_DATA     = json.load(f)
+with open(os.path.join(BASE_DIR, 'wc_history.json'), encoding='utf-8')   as f: WC_HISTORY     = json.load(f)
+with open(os.path.join(BASE_DIR, 'recent_titles.json'), encoding='utf-8') as f: RECENT_TITLES = json.load(f)
 
 def calcular_beneficio(eq1: str, eq2: str) -> float:
     """
@@ -226,7 +228,7 @@ def programacion_dinamica(partidos):
                      └─ incluir i ─┘    └─ omitir i ─┘
 
     La subestructura óptima se verifica porque:
-        - Si i está en la solución óptima S*, entonces S* \ {i} es óptimo para p(i).
+        - Si i está en la solución óptima S*, entonces S* \\ {i} es óptimo para p(i).
         - Si i no está en S*, entonces S* es óptimo para i-1.
 
     Reconstrucción de la solución: recorrido hacia atrás sobre dp[].

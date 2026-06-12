@@ -16,10 +16,10 @@ sys.setrecursionlimit(50000)
 # 1. PARÁMETROS Y DATOS BASE
 # ══════════════════════════════════════════════════════════════════
 
-ALPHA = 0.40   # peso historial mundialista  h_i
-BETA  = 0.35   # peso talla del plantel      t_i
-GAMMA = 0.25   # peso logros recientes       l_i
-DUR   = timedelta(minutes=105)   # 90 min reglamentarios + 15 min adicional promedio
+ALPHA = 0.30   # peso historial mundialista  h_i
+BETA  = 0.10   # peso talla del plantel      t_i
+GAMMA = 0.60   # peso logros recientes       l_i
+DUR   = timedelta(minutes=100)   # 90 min reglamentarios + 10 min adicional promedio
 
 with open('squad_data.json')   as f: SQUAD_DATA     = json.load(f)
 with open('wc_history.json')   as f: WC_HISTORY     = json.load(f)
@@ -389,8 +389,9 @@ def mostrar_contraejemplo():
 # ══════════════════════════════════════════════════════════════════
 
 def fmt(p):
-    return (f"  [{p['inicio'].strftime('%d/%m %H:%M')}–{p['fin'].strftime('%H:%M')}]"
-            f"  {p['eq1']:3} vs {p['eq2']:3}  {p['grupo']}  b={p['beneficio']:.3f}")
+    fecha = f"{p['inicio'].strftime('%d/%m %H:%M')}–{p['fin'].strftime('%H:%M')}"
+    equipos = f"{p['eq1']} vs {p['eq2']}"
+    return f"  │ {fecha:<17} │ {equipos:^11} │ {p['grupo']:<9} │ b = {p['beneficio']:>5.3f} │"
 
 def main():
     W = 68
@@ -491,6 +492,18 @@ def main():
     print("═"*W)
     mostrar_contraejemplo()
     print()
+
+    # ── Fixture Final Recomendado ─────────────────────────────────
+    print("\n" + "═"*W)
+    print("  FIXTURE FINAL RECOMENDADO (SOLUCIÓN ÓPTIMA)")
+    print("═"*W)
+    print(f"  Este es el calendario exacto de los {len(sel_dp)} partidos que podrás ver:")
+    print("─"*W)
+    for p in sorted(sel_dp, key=lambda x: x['inicio']):
+        print(fmt(p))
+    print("═"*W)
+    print(f"  Atractivo total acumulado: {ben_dp:.3f}")
+    print("═"*W + "\n")
 
 if __name__ == '__main__':
     main()

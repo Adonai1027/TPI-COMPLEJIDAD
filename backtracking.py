@@ -23,8 +23,8 @@ def backtracking(partidos, presupuesto_max):
     """
     n = len(partidos)
 
-    # Precomputar dp_suf: DP hacia atrás para cota exacta
-    # dp_suf[i] = WIS óptimo sobre partidos[i..n-1] sin restricción previa
+    # Precomputar dp_suf: DP hacia atrás para cota exacta con presupuesto
+    # dp_suf[i][e] = WIS óptimo sobre partidos[i..n-1] con presupuesto e disponible
     def next_compat_from(i):
         """Primer j > i con partidos[j].inicio >= partidos[i].fin (búsqueda binaria)."""
         lo, hi, res = i + 1, n - 1, n
@@ -37,10 +37,17 @@ def backtracking(partidos, presupuesto_max):
                 lo = mid + 1
         return res
 
-    dp_suf = [0.0] * (n + 1)
+    dp_suf = [[0.0] * (presupuesto_max + 1) for _ in range(n + 1)]
     for i in range(n - 1, -1, -1):
         nc = next_compat_from(i)
-        dp_suf[i] = max(partidos[i]['beneficio'] + dp_suf[nc], dp_suf[i + 1])
+        ci = partidos[i]['costo']
+        bi = partidos[i]['beneficio']
+        for e in range(presupuesto_max + 1):
+            no_incluir = dp_suf[i + 1][e]
+            incluir = 0.0
+            if e >= ci:
+                incluir = bi + dp_suf[nc][e - ci]
+            dp_suf[i][e] = max(incluir, no_incluir)
 
     mejor = {'b': 0.0, 'sel': []}
     nodos = [0]
@@ -56,8 +63,9 @@ def backtracking(partidos, presupuesto_max):
         if idx >= n:
             return
 
-        # Poda 2: cota superior no mejora al mejor actual
-        if b_acum + dp_suf[idx] <= mejor['b']:
+        # Poda 2: cota superior (considerando presupuesto remanente) no mejora al mejor actual
+        e_disponible = presupuesto_max - e_usado
+        if b_acum + dp_suf[idx][e_disponible] <= mejor['b']:
             return
 
         p = partidos[idx]

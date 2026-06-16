@@ -67,7 +67,7 @@ def programacion_dinamica(partidos, presupuesto_max):
         ci = partidos[i]['costo']
         bi = partidos[i]['beneficio']
         
-        incluir = bi + (dp[j][e - ci] if j >= 0 else 0.0) if e >= ci else -1
+        incluir = bi + (dp[j][e - ci] if j >= 0 else 0.0) if e >= ci else -float('inf')
         # Comparamos con no_incluir (dp[i-1][e] o 0 si i=0)
         no_incluir = dp[i - 1][e] if i > 0 else 0.0
         

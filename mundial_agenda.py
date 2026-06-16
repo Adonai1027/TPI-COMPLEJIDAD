@@ -12,10 +12,10 @@ sys.setrecursionlimit(50000)
 # 1. PARÁMETROS Y DATOS BASE
 # ══════════════════════════════════════════════════════════════════
 
-ALPHA = 0.30   # peso historial mundialista  h_i
+ALPHA = 0.60   # peso historial mundialista  h_i
 BETA  = 0.10   # peso talla del plantel      t_i
-GAMMA = 0.60   # peso logros recientes       l_i
-DUR   = timedelta(minutes=120)   # 90 min reglamentarios + 10 min adicional promedio
+GAMMA = 0.30   # peso logros recientes       l_i
+DUR   = timedelta(minutes=120)
 PRESUPUESTO_MAX = 480            # Presupuesto global 'E' en minutos
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

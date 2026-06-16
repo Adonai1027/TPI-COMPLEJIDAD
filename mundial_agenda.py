@@ -35,14 +35,14 @@ def calcular_beneficio(eq1: str, eq2: str) -> float:
           Proporción de jugadores que militan en Premier League, La Liga o Serie A,
           más un bonus por jugadores presentes en el ranking mundial top-20.
 
-    l_i = logro reciente máximo entre ambos equipos (0–10)
+    l_i = promedio de logros recientes entre ambos equipos (0–10)
           10 si alguno ganó el Mundial; 6 si ganó Copa América/Eurocopa/similar;
           valores intermedios según relevancia del título.
     """
     h_i = (WC_HISTORY.get(eq1, 0.0) + WC_HISTORY.get(eq2, 0.0)) / 2
     t_i = (SQUAD_DATA.get(eq1, {}).get('t_i', 0.0) +
            SQUAD_DATA.get(eq2, {}).get('t_i', 0.0)) / 2
-    l_i = max(RECENT_TITLES.get(eq1, 0), RECENT_TITLES.get(eq2, 0))
+    l_i = (RECENT_TITLES.get(eq1, 0) + RECENT_TITLES.get(eq2, 0)) / 2
     return round(ALPHA * h_i + BETA * t_i + GAMMA * l_i, 3)
 
 

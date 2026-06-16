@@ -11,6 +11,10 @@ import os
 import json, sys, time
 from datetime import datetime, timedelta
 
+from backtracking import backtracking
+from programacion_dinamica import programacion_dinamica
+from avidos import avido_mayor_beneficio, avido_menor_fin, hay_superposicion
+
 sys.setrecursionlimit(50000)
 
 # ══════════════════════════════════════════════════════════════════
@@ -20,7 +24,8 @@ sys.setrecursionlimit(50000)
 ALPHA = 0.30   # peso historial mundialista  h_i
 BETA  = 0.10   # peso talla del plantel      t_i
 GAMMA = 0.60   # peso logros recientes       l_i
-DUR   = timedelta(minutes=100)   # 90 min reglamentarios + 10 min adicional promedio
+DUR   = timedelta(minutes=120)   # 90 min reglamentarios + 10 min adicional promedio
+PRESUPUESTO_MAX = 480            # Presupuesto global 'E' en minutos
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(BASE_DIR, 'squad_data.json'), encoding='utf-8')   as f: SQUAD_DATA     = json.load(f)
@@ -125,209 +130,15 @@ def conflicto_parcial(p):
             return par['nombre']
     return None
 
-def hay_superposicion(p1, p2):
-    """True si los intervalos [inicio, fin) de p1 y p2 se solapan."""
-    return p1['inicio'] < p2['fin'] and p1['fin'] > p2['inicio']
+def en_ventana_preparacion(p_inicio, p_fin):
+    """Retorna True si el partido cae en la ventana de 3 días previos a algún parcial."""
+    for par in PARCIALES:
+        ventana_inicio = par['inicio'] - timedelta(days=3)
+        ventana_fin = par['inicio']
+        if p_inicio < ventana_fin and p_fin > ventana_inicio:
+            return True
+    return False
 
-
-# ══════════════════════════════════════════════════════════════════
-# 4. BACKTRACKING CON PODA
-# ══════════════════════════════════════════════════════════════════
-
-def backtracking(partidos):
-    """
-    Exploración exhaustiva del árbol de decisiones con dos podas:
-
-    Poda 1 — Conflicto de horario:
-        Solo se explora la rama "incluir partido i" si su horario de inicio
-        es posterior o igual al fin del último partido seleccionado.
-        Esto es correcto porque los partidos están ordenados por hora de fin.
-
-    Poda 2 — Cota superior exacta (Branch & Bound):
-        Se precomputa dp_suf[i] = máximo beneficio alcanzable con los
-        partidos i..n-1 de forma independiente (sin considerar los ya elegidos).
-        Si b_acumulado + dp_suf[idx] no supera al mejor conocido, se poda.
-
-    Complejidad: O(2^n) en el peor caso teórico, pero con estas podas
-    el árbol real explorado es drásticamente menor (verificado empíricamente).
-
-    Parámetros:
-        partidos: lista ordenada por hora de fin (requerido por la poda 1).
-    """
-    n = len(partidos)
-
-    # Precomputar dp_suf: DP hacia atrás para cota exacta
-    # dp_suf[i] = WIS óptimo sobre partidos[i..n-1] sin restricción previa
-    def next_compat_from(i):
-        """Primer j > i con partidos[j].inicio >= partidos[i].fin (búsqueda binaria)."""
-        lo, hi, res = i + 1, n - 1, n
-        target = partidos[i]['fin']
-        while lo <= hi:
-            mid = (lo + hi) // 2
-            if partidos[mid]['inicio'] >= target:
-                res = mid; hi = mid - 1
-            else:
-                lo = mid + 1
-        return res
-
-    dp_suf = [0.0] * (n + 1)
-    for i in range(n - 1, -1, -1):
-        nc = next_compat_from(i)
-        dp_suf[i] = max(partidos[i]['beneficio'] + dp_suf[nc], dp_suf[i + 1])
-
-    mejor = {'b': 0.0, 'sel': []}
-    nodos = [0]
-    NINF = datetime(1900, 1, 1)   # sentinela para "ningún partido seleccionado aún"
-
-    def bt(idx, sel, b_acum, ultimo_fin):
-        nodos[0] += 1
-
-        if b_acum > mejor['b']:
-            mejor['b'] = b_acum
-            mejor['sel'] = list(sel)
-
-        if idx >= n:
-            return
-
-        # Poda 2: cota superior no mejora al mejor actual
-        if b_acum + dp_suf[idx] <= mejor['b']:
-            return
-
-        p = partidos[idx]
-
-        # Rama INCLUIR: solo si el partido empieza después del último seleccionado
-        if p['inicio'] >= ultimo_fin:
-            sel.append(p)
-            bt(idx + 1, sel, b_acum + p['beneficio'], p['fin'])
-            sel.pop()
-
-        # Rama NO INCLUIR
-        bt(idx + 1, sel, b_acum, ultimo_fin)
-
-    bt(0, [], 0.0, NINF)
-    return mejor['sel'], round(mejor['b'], 3), nodos[0]
-
-
-# ══════════════════════════════════════════════════════════════════
-# 5. PROGRAMACIÓN DINÁMICA — Weighted Interval Scheduling
-# ══════════════════════════════════════════════════════════════════
-
-def programacion_dinamica(partidos):
-    """
-    Solución óptima por Programación Dinámica (Weighted Interval Scheduling).
-
-    Definición:
-        dp[i] = máximo beneficio acumulable considerando los partidos 0..i
-
-    Función de compatibilidad p(i):
-        Índice del último partido j < i tal que fin[j] <= inicio[i].
-        Calculado con búsqueda binaria → O(log n) por llamada.
-
-    Recurrencia:
-        dp[i] = max( b[i] + dp[p(i)],   dp[i-1] )
-                     └─ incluir i ─┘    └─ omitir i ─┘
-
-    La subestructura óptima se verifica porque:
-        - Si i está en la solución óptima S*, entonces S* \\ {i} es óptimo para p(i).
-        - Si i no está en S*, entonces S* es óptimo para i-1.
-
-    Reconstrucción de la solución: recorrido hacia atrás sobre dp[].
-
-    Complejidad: O(n log n) — dominada por el ordenamiento y las búsquedas binarias.
-
-    Parámetros:
-        partidos: lista ordenada por hora de fin (requerido por la recurrencia).
-    """
-    n = len(partidos)
-    if n == 0:
-        return [], 0.0
-
-    def ultimo_compatible(i):
-        """Mayor j < i con partidos[j].fin <= partidos[i].inicio."""
-        lo, hi, res = 0, i - 1, -1
-        target = partidos[i]['inicio']
-        while lo <= hi:
-            mid = (lo + hi) // 2
-            if partidos[mid]['fin'] <= target:
-                res = mid; lo = mid + 1
-            else:
-                hi = mid - 1
-        return res
-
-    dp = [0.0] * n
-    dp[0] = partidos[0]['beneficio']
-    for i in range(1, n):
-        j = ultimo_compatible(i)
-        incluir    = partidos[i]['beneficio'] + (dp[j] if j >= 0 else 0.0)
-        no_incluir = dp[i - 1]
-        dp[i] = max(incluir, no_incluir)
-
-    # Reconstrucción
-    seleccion = []
-    i = n - 1
-    while i >= 0:
-        j = ultimo_compatible(i)
-        incluir = partidos[i]['beneficio'] + (dp[j] if j >= 0 else 0.0)
-        if i == 0 or incluir >= dp[i - 1]:
-            seleccion.append(partidos[i])
-            i = j
-        else:
-            i -= 1
-
-    seleccion.reverse()
-    return seleccion, round(dp[n - 1], 3)
-
-
-# ══════════════════════════════════════════════════════════════════
-# 6. ALGORITMOS ÁVIDOS
-# ══════════════════════════════════════════════════════════════════
-
-def avido_mayor_beneficio(partidos):
-    """
-    Criterio ávido: seleccionar en cada paso el partido disponible
-    con mayor beneficio que no entre en conflicto con los ya elegidos.
-
-    Función de selección: argmax b_i sobre los candidatos restantes.
-
-    Complejidad: O(n²) — ordenamiento + verificación de compatibilidad.
-
-    NOTA IMPORTANTE:
-        Este criterio NO garantiza solución óptima para Weighted Interval
-        Scheduling. El contraejemplo al final del programa lo demuestra.
-        Sin embargo, en la práctica produce soluciones de buena calidad
-        y es significativamente más rápido que BT y DP para grandes n.
-    """
-    candidatos = sorted(partidos, key=lambda x: -x['beneficio'])
-    seleccion, b_total = [], 0.0
-    for p in candidatos:
-        if all(not hay_superposicion(p, s) for s in seleccion):
-            seleccion.append(p)
-            b_total += p['beneficio']
-    seleccion.sort(key=lambda x: x['inicio'])
-    return seleccion, round(b_total, 3)
-
-def avido_menor_fin(partidos):
-    """
-    Criterio ávido clásico: seleccionar el partido que termina más temprano
-    y que sea compatible con los ya elegidos.
-
-    Función de selección: argmin fin_i sobre los candidatos restantes.
-
-    Complejidad: O(n log n) — dominada por el ordenamiento.
-
-    Este criterio es ÓPTIMO cuando todos los beneficios son iguales
-    (maximiza la cantidad de partidos vistos). Con pesos distintos,
-    puede sacrificar beneficio para incluir más partidos de bajo atractivo.
-    """
-    candidatos = sorted(partidos, key=lambda x: x['fin'])
-    seleccion, b_total = [], 0.0
-    ultimo_fin = datetime(1900, 1, 1)
-    for p in candidatos:
-        if p['inicio'] >= ultimo_fin:
-            seleccion.append(p)
-            b_total += p['beneficio']
-            ultimo_fin = p['fin']
-    return seleccion, round(b_total, 3)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -357,11 +168,11 @@ def mostrar_contraejemplo():
     Pérdida: 13.0 − 8.5 = 4.5 unidades de beneficio.
     """
     A = {'eq1':'ESP','eq2':'ARG','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,16, 0),'fin':datetime(2026,6,20,17,45),'beneficio':6.0}
+         'inicio':datetime(2026,6,20,16, 0),'fin':datetime(2026,6,20,17,45),'beneficio':6.0, 'costo': 0}
     B = {'eq1':'FRA','eq2':'BRA','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,16,30),'fin':datetime(2026,6,20,18,15),'beneficio':8.5}
+         'inicio':datetime(2026,6,20,16,30),'fin':datetime(2026,6,20,18,15),'beneficio':8.5, 'costo': 0}
     C = {'eq1':'POR','eq2':'ENG','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,18, 0),'fin':datetime(2026,6,20,19,45),'beneficio':7.0}
+         'inicio':datetime(2026,6,20,18, 0),'fin':datetime(2026,6,20,19,45),'beneficio':7.0, 'costo': 0}
     ej = [A, B, C]
 
     print("  Partidos del contraejemplo:")
@@ -374,8 +185,8 @@ def mostrar_contraejemplo():
           f"B ∩ C = {hay_superposicion(B,C)}    "
           f"A ∩ C = {hay_superposicion(A,C)}")
 
-    sel_av, ben_av = avido_mayor_beneficio(ej)
-    sel_dp, ben_dp = programacion_dinamica(ej)
+    sel_av, ben_av = avido_mayor_beneficio(ej, PRESUPUESTO_MAX)
+    sel_dp, ben_dp = programacion_dinamica(ej, PRESUPUESTO_MAX)
 
     av_str = ' + '.join(p['eq1']+' vs '+p['eq2'] for p in sel_av)
     dp_str = ' + '.join(p['eq1']+' vs '+p['eq2'] for p in sel_dp)
@@ -393,10 +204,11 @@ def mostrar_contraejemplo():
 def fmt(p):
     fecha = f"{p['inicio'].strftime('%d/%m %H:%M')}–{p['fin'].strftime('%H:%M')}"
     equipos = f"{p['eq1']} vs {p['eq2']}"
-    return f"  │ {fecha:<17} │ {equipos:^11} │ {p['grupo']:<9} │ b = {p['beneficio']:>5.3f} │"
+    tipo = "Ventana (120m)" if p.get('costo', 0) > 0 else "Libre (0m)"
+    return f"  │ {fecha:<17} │ {equipos:^11} │ {p['grupo']:<9} │ b = {p['beneficio']:>5.3f} │ {tipo:<15} │"
 
 def main():
-    W = 68
+    W = 86
     print("═"*W)
     print("  OPTIMIZACIÓN DE AGENDA TELEVISIVA — MUNDIAL 2026")
     print(f"  Fórmula atractivo: b_i = {ALPHA}·h_i + {BETA}·t_i + {GAMMA}·l_i")
@@ -410,6 +222,7 @@ def main():
         if conf:
             excluidos.append((p, conf))
         else:
+            p['costo'] = 120 if en_ventana_preparacion(p['inicio'], p['fin']) else 0
             candidatos.append(p)
 
     print(f"\n  Partidos totales fase de grupos : {len(todos)}")
@@ -427,7 +240,7 @@ def main():
     print("  ▶ 1. BACKTRACKING  (poda conflicto + cota superior exacta)")
     print("─"*W)
     t0 = time.perf_counter()
-    sel_bt, ben_bt, nodos = backtracking(cands)
+    sel_bt, ben_bt, nodos = backtracking(cands, PRESUPUESTO_MAX)
     t_bt = time.perf_counter() - t0
     print(f"  Nodos explorados : {nodos:,}   |   Tiempo: {t_bt*1000:.1f} ms")
     print(f"  Partidos elegidos: {len(sel_bt)}   |   Beneficio total: {ben_bt}")
@@ -439,7 +252,7 @@ def main():
     print("  ▶ 2. PROGRAMACIÓN DINÁMICA  (Weighted Interval Scheduling)")
     print("─"*W)
     t0 = time.perf_counter()
-    sel_dp, ben_dp = programacion_dinamica(cands)
+    sel_dp, ben_dp = programacion_dinamica(cands, PRESUPUESTO_MAX)
     t_dp = time.perf_counter() - t0
     print(f"  Tiempo: {t_dp*1000:.2f} ms")
     print(f"  Partidos elegidos: {len(sel_dp)}   |   Beneficio total: {ben_dp}")
@@ -451,7 +264,7 @@ def main():
     print("  ▶ 3a. ÁVIDO — mayor beneficio primero  (heurístico, no óptimo)")
     print("─"*W)
     t0 = time.perf_counter()
-    sel_av1, ben_av1 = avido_mayor_beneficio(cands)
+    sel_av1, ben_av1 = avido_mayor_beneficio(cands, PRESUPUESTO_MAX)
     t_av1 = time.perf_counter() - t0
     print(f"  Tiempo: {t_av1*1000:.2f} ms")
     print(f"  Partidos elegidos: {len(sel_av1)}   |   Beneficio total: {ben_av1}")
@@ -463,7 +276,7 @@ def main():
     print("  ▶ 3b. ÁVIDO — menor hora de fin  (óptimo en cantidad, no en beneficio)")
     print("─"*W)
     t0 = time.perf_counter()
-    sel_av2, ben_av2 = avido_menor_fin(cands)
+    sel_av2, ben_av2 = avido_menor_fin(cands, PRESUPUESTO_MAX)
     t_av2 = time.perf_counter() - t0
     print(f"  Tiempo: {t_av2*1000:.2f} ms")
     print(f"  Partidos elegidos: {len(sel_av2)}   |   Beneficio total: {ben_av2}")

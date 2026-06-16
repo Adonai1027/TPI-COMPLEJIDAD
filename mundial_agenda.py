@@ -1,12 +1,3 @@
-"""
-╔══════════════════════════════════════════════════════════════════╗
-║   OPTIMIZACIÓN DE AGENDA TELEVISIVA — MUNDIAL 2026              ║
-║   Weighted Interval Scheduling con atractivo ponderado           ║
-║                                                                  ║
-║   Técnicas: Backtracking | Programación Dinámica | Ávido        ║
-╚══════════════════════════════════════════════════════════════════╝
-"""
-
 import os
 import json, sys, time
 from datetime import datetime, timedelta
@@ -141,60 +132,7 @@ def en_ventana_preparacion(p_inicio, p_fin):
 
 
 
-# ══════════════════════════════════════════════════════════════════
-# 7. CONTRAEJEMPLO PARA EL ÁVIDO
-# ══════════════════════════════════════════════════════════════════
 
-def mostrar_contraejemplo():
-    """
-    Demuestra que el criterio 'mayor beneficio' no es óptimo para WIS.
-
-    Construcción:
-        A: [16:00–17:45]  b = 6.0   (ESP vs ARG)
-        B: [16:30–18:15]  b = 8.5   (FRA vs BRA)  ← el ávido lo elige primero
-        C: [18:00–19:45]  b = 7.0   (POR vs ENG)
-
-        A∩B = True   (se solapan → incompatibles)
-        B∩C = True   (se solapan → incompatibles)
-        A∩C = False  (compatibles: A termina 17:45, C empieza 18:00)
-
-    Decisión del ávido:
-        Paso 1 → elige B (mayor b=8.5). B bloquea A y C.
-        Resultado: {B} → beneficio = 8.5
-
-    Solución óptima:
-        Elegir A + C → beneficio = 6.0 + 7.0 = 13.0
-
-    Pérdida: 13.0 − 8.5 = 4.5 unidades de beneficio.
-    """
-    A = {'eq1':'ESP','eq2':'ARG','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,16, 0),'fin':datetime(2026,6,20,17,45),'beneficio':6.0, 'costo': 0}
-    B = {'eq1':'FRA','eq2':'BRA','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,16,30),'fin':datetime(2026,6,20,18,15),'beneficio':8.5, 'costo': 0}
-    C = {'eq1':'POR','eq2':'ENG','grupo':'Ejemplo',
-         'inicio':datetime(2026,6,20,18, 0),'fin':datetime(2026,6,20,19,45),'beneficio':7.0, 'costo': 0}
-    ej = [A, B, C]
-
-    print("  Partidos del contraejemplo:")
-    for p in ej:
-        print(f"    {p['eq1']} vs {p['eq2']}  "
-              f"[{p['inicio'].strftime('%H:%M')}–{p['fin'].strftime('%H:%M')}]  b={p['beneficio']}")
-
-    print(f"\n  Superposiciones:")
-    print(f"    A ∩ B = {hay_superposicion(A,B)}    "
-          f"B ∩ C = {hay_superposicion(B,C)}    "
-          f"A ∩ C = {hay_superposicion(A,C)}")
-
-    sel_av, ben_av = avido_mayor_beneficio(ej, PRESUPUESTO_MAX)
-    sel_dp, ben_dp = programacion_dinamica(ej, PRESUPUESTO_MAX)
-
-    av_str = ' + '.join(p['eq1']+' vs '+p['eq2'] for p in sel_av)
-    dp_str = ' + '.join(p['eq1']+' vs '+p['eq2'] for p in sel_dp)
-
-    print(f"\n  Ávido elige : {av_str}  →  b = {ben_av}")
-    print(f"  Óptimo (DP) : {dp_str}  →  b = {ben_dp}")
-    print(f"\n  Pérdida ávido = {round(ben_dp - ben_av, 1)} unidades ({round((1-ben_av/ben_dp)*100,1)}% peor)")
-    print("  Conclusión: el ávido de mayor beneficio NO es óptimo para WIS.")
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -234,6 +172,14 @@ def main():
 
     # Ordenar por hora de fin (requerido por DP y BT)
     cands = sorted(candidatos, key=lambda x: x['fin'])
+
+    # ── Fixture Completo (Candidatos Válidos) ─────────────────────
+    print("─"*W)
+    print("  FIXTURE COMPLETO (CANDIDATOS VÁLIDOS)")
+    print("─"*W)
+    for p in sorted(cands, key=lambda x: x['inicio']):
+        print(fmt(p))
+    print()
 
     # ── Backtracking ──────────────────────────────────────────────
     print("─"*W)
@@ -301,12 +247,7 @@ def main():
         f"ERROR: BT ({ben_bt}) y DP ({ben_dp}) no coinciden."
     print(f"\n  ✓ BT y DP coinciden → solución óptima verificada.")
 
-    # ── Contraejemplo ─────────────────────────────────────────────
-    print("\n" + "═"*W)
-    print("  CONTRAEJEMPLO: por qué el ávido NO garantiza el óptimo en WIS")
-    print("═"*W)
-    mostrar_contraejemplo()
-    print()
+
 
     # ── Fixture Final Recomendado ─────────────────────────────────
     print("\n" + "═"*W)
